@@ -37,8 +37,8 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/xijunyuan/GicDoc.git
-cd GicDoc
+git clone https://github.com/xijunyuan/GitDoc.git
+cd GitDoc
 ```
 
 ### 2. 安装 Python 依赖
