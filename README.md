@@ -34,38 +34,56 @@
 
 ## 快速开始
 
-### 1. 克隆项目
+整个配置流程只需三步，**每一步都有对应的 `.bat` 脚本，双击即可运行**：
+
+> 🔒 → ▶️ → 📎
+> 信任证书 → 启动后端 → 安装加载项
+
+---
+
+### 1. 克隆项目 & 安装依赖
 
 ```bash
 git clone https://github.com/xijunyuan/GitDoc.git
 cd GitDoc
-```
-
-### 2. 安装 Python 依赖
-
-```bash
 cd backend
 pip install -r requirements.txt
 ```
+
+---
+
+### 2. 配置 SSL 证书（只需一次）
+
+由于 Word 要求加载项必须通过 HTTPS 通信，GitDoc 使用自签名证书在本地建立安全连接。**这一步会生成证书并让 Windows 信任它**。
+
+双击运行 **`scripts\gen_cert.bat`**：
+
+- 会自动调用 PowerShell 生成证书（无需安装 OpenSSL）
+- 弹 UAC 提示时点 **"是"**（需要管理员权限来信任证书）
+- 看到 `[OK] Certificate is now trusted.` 即完成
+
+> **如果不想给管理员权限**，脚本会提示手动信任的方法：双击 `scripts\certs\localhost.crt`，按向导安装到"受信任的根证书颁发机构"。
+
+---
 
 ### 3. 启动后端服务
 
 后端是 GitDoc 的"大脑"，负责管理文档版本、计算差异等工作。**每次使用 GitDoc 前都需要先启动它**。
 
-双击运行项目文件夹中的 `scripts\start_backend.bat`，会弹出命令行窗口，显示：
+双击运行 **`scripts\start_backend.bat`**，会弹出命令行窗口，显示：
 
-```
+```text
 GitDoc Backend v0.1.0
-Frontend:  https://localhost:18521
-API docs:  https://localhost:18521/docs
-SSL:       enabled
+Python:   C:\...\python.exe
+Location: ...\GitDoc\backend
+Port:     http://127.0.0.1:18521
 ```
 
-看到这几行就说明后端启动成功了，**不要关掉这个窗口**，让它一直在后台运行即可。
+看到这几行就说明启动成功了。**不要关掉这个窗口**，让它一直在后台运行。
 
-> **如果窗口一闪就消失了**，说明 Python 没有正确安装。请先安装 [Python 3.10+](https://www.python.org/downloads/)，安装时务必勾选 **"Add Python to PATH"**，然后重新双击 `start_backend.bat`。
-
-> **手动启动（备选方案）**：打开项目文件夹，在地址栏输入 `cmd` 回车，依次输入：
+> **如果窗口一闪就消失了**：说明 Python 没有正确安装。请先安装 [Python 3.10+](https://www.python.org/downloads/)，安装时务必勾选 **"Add Python to PATH"**，然后重新双击 `start_backend.bat`。
+>
+> **备选方案（手动启动）**：在项目文件夹地址栏输入 `cmd` 回车，执行：
 >
 > ```bash
 > cd backend
@@ -74,28 +92,21 @@ SSL:       enabled
 
 ---
 
-### 4. 在 Word 中安装加载项
+### 4. 在 Word 中安装加载项（只需一次）
 
-这一步需要把 GitDoc 面板挂载到 Word 里。**只需配置一次**，之后打开 Word 就能直接用。
+双击运行 **`scripts\install_addin.bat`**，它会自动完成以下检查并安装：
 
-#### 4.1 开启 Word 开发工具
+1. ✅ 检查 SSL 证书是否已信任
+2. ✅ 检查后端是否正在运行
+3. ✅ 将加载项清单复制到 Office 共享文件夹
 
-打开 Word，按以下路径操作：
+如果某项未通过，脚本会告诉你具体怎么修。
 
-> **文件** → 左下角 **选项** → **自定义功能区** → 右侧列表勾选 **"开发工具"** → **确定**
+安装完成后，打开（或重启）Word：
 
-完成后 Word 顶部菜单栏会出现一个"开发工具"标签页。
-
-#### 4.2 配置加载项目录
-
-双击运行项目文件夹中的 `scripts\install_addin.bat`，它会自动把 GitDoc 加载项注册到电脑的共享文件夹中。
-
-#### 4.3 在 Word 中加载 GitDoc
-
-1. 打开（或重启）Word
-2. 点击顶部菜单栏的 **开发工具** → **加载项**（或 **插入** → **我的加载项**）
-3. 在弹出的窗口中，选择顶部的 **"共享文件夹"** 标签页
-4. 列表里会出现 **"GitDoc - 文档版本管理"**，点击它，然后点 **"添加"**
+1. 点击顶部菜单栏 **插入** → **我的加载项**
+2. 在弹出的窗口中，选择顶部的 **"共享文件夹"** 标签页
+3. 列表里会出现 **"GitDoc - 文档版本管理"**，点击 → **"添加"**
 
 Word 右侧会弹出 GitDoc 任务窗格，说明安装成功！
 
@@ -104,7 +115,7 @@ Word 右侧会弹出 GitDoc 任务窗格，说明安装成功！
 ### 5. 开始使用
 
 1. 用 Word 打开任意 `.docx` 文档
-2. Word 右侧任务窗格会显示 GitDoc 面板（如果没显示，点击 **开发工具** → **加载项** 重新打开）
+2. 右侧任务窗格会显示 GitDoc 面板（如果没显示，点击 **插入** → **我的加载项** 重新打开）
 3. 像平常一样编辑文档，每次保存（`Ctrl+S`）时，GitDoc 会自动记录一个新版本
 4. 在面板中可以查看历史版本、对比任意两个版本的差异、一键回滚到旧版本
 
