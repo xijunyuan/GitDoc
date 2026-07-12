@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>GitDoc - 文档版本管理</title>
+
+    <!-- Office.js (loaded from CDN when running in Word) -->
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/history.css">
+    <link rel="stylesheet" href="styles/diff.css">
+    <link rel="stylesheet" href="styles/preview.css">
+
+    <!--
+        GitDoc JavaScript Modules (IIFE pattern, loaded in dependency order)
+        Each file registers its constructor on the global "GitDoc" namespace.
+    -->
+    <script src="utils/i18n.js"></script>
+    <script src="utils/event-bus.js"></script>
+    <script src="api.js"></script>
+    <script src="panels/history.js"></script>
+    <script src="panels/diff.js"></script>
+    <script src="panels/rollback.js"></script>
+    <script src="panels/preview.js"></script>
+    <script src="main.js"></script>
+</head>
+<body>
+    <div id="app">
+
+        <!-- Top Status Bar -->
+        <div id="status-bar">
+            <span id="connection-status" class="status-connecting">GitDoc: 正在连接...</span>
+            <span id="doc-name"></span>
+        </div>
+
+        <!-- Error / Warning Messages -->
+        <div id="error-message" class="error-box" style="display:none"></div>
+        <div id="warning-message" class="warning-box" style="display:none"></div>
+
+        <!-- Loading Spinner -->
+        <div id="loading-spinner">
+            <div class="spinner-icon"></div>
+            <span>GitDoc 正在启动...</span>
+        </div>
+
+        <!-- Document Setup (shown when doc path is unknown) -->
+        <div id="setup-panel" class="panel" style="display:none">
+            <h3>设置文档路径</h3>
+            <p>请输入要跟踪的 .docx 文件完整路径：</p>
+            <div class="setup-form">
+                <input type="text" id="docx-path-input"
+                       placeholder="例如: C:\Users\...\document.docx"
+                       style="width:100%;padding:6px;margin:8px 0">
+                <button class="btn btn-primary" id="btn-set-docx">确认 (Set Document)</button>
+            </div>
+            <p class="setup-hint">
+                提示：在 Word 中保存文件后再打开此面板，路径会自动检测。
+            </p>
+        </div>
+
+        <!-- Tab Bar -->
+        <div id="tab-bar" class="tab-bar">
+            <button class="tab active" data-view="history">版本历史 (History)</button>
+            <button class="tab" data-view="diff" style="display:none">差异对比 (Diff)</button>
+            <button class="tab" data-view="preview" style="display:none">预览 (Preview)</button>
+        </div>
+
+        <!-- Panels -->
+        <div id="history-panel" class="panel"></div>
+        <div id="diff-panel" class="panel" style="display:none"></div>
+        <div id="rollback-panel" class="panel modal-overlay" style="display:none"></div>
+        <div id="preview-panel" class="panel" style="display:none"></div>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+    "_comment": "GitDoc 配置文件 — 放置在文档所在目录的 .gitdoc/ 下",
+    "docx_basename": "document.docx",
+    "initial_path": "",
+    "auto_commit_enabled": true,
+    "debounce_seconds": 3.0,
+    "author_name": "GitDoc User",
+    "author_email": "user@gitdoc.local",
+    "max_history_count": 100,
+    "created_at": "",
+    "version_counter": 0
+}

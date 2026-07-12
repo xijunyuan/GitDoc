@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+           xsi:type="TaskPaneApp">
+
+    <Id>c6b9e8d1-2f3a-4a5b-9c7d-1e2f3a4b5c6d</Id>
+    <Version>1.0.0.0</Version>
+    <ProviderName>GitDoc</ProviderName>
+    <DefaultLocale>zh-CN</DefaultLocale>
+    <DisplayName DefaultValue="GitDoc - 文档版本管理"/>
+    <Description DefaultValue="基于 Git 的 Word 文档版本控制工具。自动记录每次保存，支持差异对比、版本回滚。"/>
+
+    <IconUrl DefaultValue="https://localhost:18521/assets/icon-32.png"/>
+    <HighResolutionIconUrl DefaultValue="https://localhost:18521/assets/icon-80.png"/>
+
+    <SupportUrl DefaultValue="https://github.com/gitdoc/gitdoc"/>
+    <AppDomains>
+        <AppDomain>https://localhost:18521</AppDomain>
+    </AppDomains>
+
+    <Hosts>
+        <Host Name="Document"/>
+    </Hosts>
+
+    <DefaultSettings>
+        <SourceLocation DefaultValue="https://localhost:18521/index.html"/>
+    </DefaultSettings>
+
+    <Permissions>ReadWriteDocument</Permissions>
+
+    <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+        <Hosts>
+            <Host xsi:type="Document">
+                <DesktopFormFactor>
+                    <GetStarted>
+                        <Title resid="GetStarted.Title"/>
+                        <Description resid="GetStarted.Description"/>
+                        <LearnMoreUrl resid="GetStarted.LearnMoreUrl"/>
+                    </GetStarted>
+
+                    <ExtensionPoint xsi:type="PrimaryCommandSurface">
+                        <OfficeTab id="TabHome">
+                            <Group id="GitDoc.Group">
+                                <Label resid="Group.Label"/>
+                                <Icon>
+                                    <bt:Image size="16" resid="Icon.16x16"/>
+                                    <bt:Image size="32" resid="Icon.32x32"/>
+                                    <bt:Image size="80" resid="Icon.80x80"/>
+                                </Icon>
+
+                                <Control xsi:type="Button" id="btnSaveVersion">
+                                    <Label resid="btnSaveVersion.Label"/>
+                                    <Supertip>
+                                        <Title resid="btnSaveVersion.Title"/>
+                                        <Description resid="btnSaveVersion.Desc"/>
+                                    </Supertip>
+                                    <Icon>
+                                        <bt:Image size="16" resid="Icon.16x16"/>
+                                        <bt:Image size="32" resid="Icon.32x32"/>
+                                        <bt:Image size="80" resid="Icon.80x80"/>
+                                    </Icon>
+                                    <Action xsi:type="ShowTaskpane">
+                                        <TaskpaneId>GitDocTaskPane</TaskpaneId>
+                                        <SourceLocation resid="Taskpane.Url"/>
+                                    </Action>
+                                </Control>
+
+                                <Control xsi:type="Button" id="btnVersionHistory">
+                                    <Label resid="btnVersionHistory.Label"/>
+                                    <Supertip>
+                                        <Title resid="btnVersionHistory.Title"/>
+                                        <Description resid="btnVersionHistory.Desc"/>
+                                    </Supertip>
+                                    <Icon>
+                                        <bt:Image size="16" resid="Icon.16x16"/>
+                                        <bt:Image size="32" resid="Icon.32x32"/>
+                                        <bt:Image size="80" resid="Icon.80x80"/>
+                                    </Icon>
+                                    <Action xsi:type="ShowTaskpane">
+                                        <TaskpaneId>GitDocTaskPane</TaskpaneId>
+                                        <SourceLocation resid="Taskpane.Url"/>
+                                    </Action>
+                                </Control>
+                            </Group>
+                        </OfficeTab>
+                    </ExtensionPoint>
+                </DesktopFormFactor>
+            </Host>
+        </Hosts>
+
+        <Resources>
+            <bt:Images>
+                <bt:Image id="Icon.16x16" DefaultValue="https://localhost:18521/assets/icon-16.png"/>
+                <bt:Image id="Icon.32x32" DefaultValue="https://localhost:18521/assets/icon-32.png"/>
+                <bt:Image id="Icon.80x80" DefaultValue="https://localhost:18521/assets/icon-80.png"/>
+            </bt:Images>
+
+            <bt:Urls>
+                <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:18521/index.html"/>
+                <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://github.com/gitdoc/gitdoc"/>
+            </bt:Urls>
+
+            <bt:ShortStrings>
+                <bt:String id="Group.Label" DefaultValue="GitDoc"/>
+                <bt:String id="btnSaveVersion.Label" DefaultValue="保存版本"/>
+                <bt:String id="btnSaveVersion.Title" DefaultValue="保存版本 (Save Version)"/>
+                <bt:String id="btnVersionHistory.Label" DefaultValue="版本历史"/>
+                <bt:String id="btnVersionHistory.Title" DefaultValue="版本历史 (Version History)"/>
+                <bt:String id="GetStarted.Title" DefaultValue="GitDoc - 文档版本管理"/>
+
+            </bt:ShortStrings>
+
+            <bt:LongStrings>
+                <bt:String id="btnSaveVersion.Desc" DefaultValue="将当前文档保存为一个新版本，可添加描述信息。 (Save current document as a new version with an optional description.)"/>
+                <bt:String id="btnVersionHistory.Desc" DefaultValue="查看所有历史版本，进行对比、预览和回滚操作。 (View all historical versions for comparison, preview, and rollback.)"/>
+                <bt:String id="GetStarted.Description" DefaultValue="GitDoc 为您的 Word 文档提供 Git 级别的版本管理。自动记录每次保存，支持差异对比和版本回滚。无需学习 Git！"/>
+            </bt:LongStrings>
+        </Resources>
+    </VersionOverrides>
+</OfficeApp>

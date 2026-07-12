@@ -1,0 +1,8 @@
+{
+    "venvPath": "D:\\Anaconda3\\envs",
+    "venv": "gitdoc",
+    "pythonVersion": "3.11",
+    "extraPaths": [
+        "backend"
+    ]
+}

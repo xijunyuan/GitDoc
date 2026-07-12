@@ -1,0 +1,377 @@
+/**
+ * GitDoc Main Styles
+ * ===================
+ * Base layout, typography, colors, and component styles.
+ * Designed for the Word task pane (typically ~300px wide).
+ */
+
+/* ---- Reset & Base ---- */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: "Segoe UI", "Microsoft YaHei", "微软雅黑", sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #333;
+    background: #fff;
+    overflow-x: hidden;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* ---- Tab Bar ---- */
+
+.tab-bar {
+    display: flex;
+    border-bottom: 2px solid #e0e0e0;
+    background: #f5f5f5;
+    padding: 0;
+}
+
+.tab-bar .tab {
+    flex: 1;
+    padding: 10px 8px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #666;
+    transition: color 0.2s, border-color 0.2s;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+}
+
+.tab-bar .tab:hover {
+    color: #1a73e8;
+}
+
+.tab-bar .tab.active {
+    color: #1a73e8;
+    border-bottom-color: #1a73e8;
+    font-weight: 600;
+}
+
+/* ---- Status Bar ---- */
+
+#status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 11px;
+}
+
+.status-connecting {
+    color: #e37400;
+}
+
+.status-ok {
+    color: #188038;
+}
+
+.status-error {
+    color: #c5221f;
+}
+
+.status-connecting::before,
+.status-ok::before,
+.status-error::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.status-connecting::before {
+    background: #e37400;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.status-ok::before {
+    background: #34a853;
+}
+
+.status-error::before {
+    background: #ea4335;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* ---- Warning Box ---- */
+
+.warning-box {
+    background: #fef7e0;
+    color: #5f4b00;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f9ab00;
+    font-size: 11px;
+}
+
+/* ---- Spinner ---- */
+
+#loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 16px;
+    color: #999;
+    font-size: 13px;
+    gap: 12px;
+}
+
+.spinner-icon {
+    width: 28px;
+    height: 28px;
+    border: 3px solid #e0e0e0;
+    border-top-color: #1a73e8;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ---- Document Name ---- */
+
+#doc-name {
+    color: #999;
+    font-size: 11px;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---- Buttons ---- */
+
+/* ---- Setup Panel ---- */
+
+#setup-panel {
+    padding: 16px;
+}
+
+#setup-panel h3 {
+    font-size: 15px;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+#setup-panel p {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.setup-form {
+    margin: 8px 0;
+}
+
+.setup-hint {
+    font-size: 11px !important;
+    color: #999 !important;
+    margin-top: 8px;
+    font-style: italic;
+}
+
+.btn {
+    padding: 6px 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    color: #333;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.btn:hover {
+    background: #f0f0f0;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: #1a73e8;
+    color: #fff;
+    border-color: #1a73e8;
+}
+
+.btn-primary:hover {
+    background: #1557b0;
+    border-color: #1557b0;
+}
+
+.btn-danger {
+    color: #d93025;
+    border-color: #d93025;
+}
+
+.btn-danger:hover {
+    background: #fce8e6;
+}
+
+.btn-sm {
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 3px;
+    border: 1px solid #ddd;
+    background: #fff;
+    cursor: pointer;
+    color: #555;
+    font-family: inherit;
+}
+
+.btn-sm:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+}
+
+.btn-back {
+    background: none;
+    border: none;
+    color: #1a73e8;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 0;
+}
+
+.btn-back:hover {
+    text-decoration: underline;
+}
+
+/* ---- Panels ---- */
+
+.panel {
+    flex: 1;
+    padding: 12px;
+    overflow-y: auto;
+}
+
+/* ---- Loading ---- */
+
+.loading {
+    text-align: center;
+    padding: 40px 16px;
+    color: #999;
+    font-size: 13px;
+}
+
+/* ---- Error ---- */
+
+.error-box {
+    background: #fce8e6;
+    color: #c5221f;
+    padding: 12px;
+    border-radius: 4px;
+    margin: 8px;
+    font-size: 12px;
+}
+
+.error-box small {
+    display: block;
+    margin-top: 4px;
+    color: #999;
+}
+
+/* ---- Empty State ---- */
+
+.empty-state {
+    text-align: center;
+    padding: 40px 16px;
+    color: #999;
+}
+
+.empty-state p {
+    margin-bottom: 8px;
+}
+
+/* ---- Toolbar ---- */
+
+.toolbar {
+    display: flex;
+    gap: 8px;
+    padding: 12px 0;
+    border-top: 1px solid #eee;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+/* ---- Badges ---- */
+
+.badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-auto {
+    background: #e8f0fe;
+    color: #1a73e8;
+}
+
+.badge-manual {
+    background: #fef7e0;
+    color: #e37400;
+}
+
+/* ---- Modal Overlay ---- */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.modal-box {
+    background: #fff;
+    border-radius: 8px;
+    padding: 24px;
+    max-width: 90%;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+}
+
+.modal-box h2 {
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: #d93025;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}

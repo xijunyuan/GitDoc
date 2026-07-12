@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+*.egg
+
+# pytest
+.pytest_cache/
+.cache/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# GitDoc runtime data (per-document repos)
+.gitdoc/
+
+# Build artifacts
+build/
+*.spec
+
+# Environment
+venv/
+.env
+*.code-workspace
+
+# Claude
+.claude/
