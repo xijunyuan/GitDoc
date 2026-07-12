@@ -48,35 +48,65 @@ cd backend
 pip install -r requirements.txt
 ```
 
-### 3. 启动后端
+### 3. 启动后端服务
 
-```bash
-# Windows
-scripts\start_backend.bat
+后端是 GitDoc 的"大脑"，负责管理文档版本、计算差异等工作。**每次使用 GitDoc 前都需要先启动它**。
 
-# 或手动启动
-cd backend
-python main.py
+双击运行项目文件夹中的 `scripts\start_backend.bat`，会弹出命令行窗口，显示：
+
+```
+GitDoc Backend v0.1.0
+Frontend:  https://localhost:18521
+API docs:  https://localhost:18521/docs
+SSL:       enabled
 ```
 
-后端启动后监听 `https://localhost:18521`，API 文档见 `https://localhost:18521/docs`。
+看到这几行就说明后端启动成功了，**不要关掉这个窗口**，让它一直在后台运行即可。
 
-> 提示：首次启动会自动使用自签名证书启用 HTTPS。如需使用 HTTP，加 `--http` 参数。
+> **如果窗口一闪就消失了**，说明 Python 没有正确安装。请先安装 [Python 3.10+](https://www.python.org/downloads/)，安装时务必勾选 **"Add Python to PATH"**，然后重新双击 `start_backend.bat`。
 
-### 4. 安装 Word 加载项
+> **手动启动（备选方案）**：打开项目文件夹，在地址栏输入 `cmd` 回车，依次输入：
+>
+> ```bash
+> cd backend
+> python main.py
+> ```
 
-在 Word 中：
-1. 启用开发人员模式（文件 → 选项 → 自定义功能区 → 勾选"开发工具"）
-2. 运行 `scripts\install_addin.bat`
-3. 打开 Word → 插入 → 我的加载项 → 共享文件夹
-4. 选择 "GitDoc - 文档版本管理"
+---
+
+### 4. 在 Word 中安装加载项
+
+这一步需要把 GitDoc 面板挂载到 Word 里。**只需配置一次**，之后打开 Word 就能直接用。
+
+#### 4.1 开启 Word 开发工具
+
+打开 Word，按以下路径操作：
+
+> **文件** → 左下角 **选项** → **自定义功能区** → 右侧列表勾选 **"开发工具"** → **确定**
+
+完成后 Word 顶部菜单栏会出现一个"开发工具"标签页。
+
+#### 4.2 配置加载项目录
+
+双击运行项目文件夹中的 `scripts\install_addin.bat`，它会自动把 GitDoc 加载项注册到电脑的共享文件夹中。
+
+#### 4.3 在 Word 中加载 GitDoc
+
+1. 打开（或重启）Word
+2. 点击顶部菜单栏的 **开发工具** → **加载项**（或 **插入** → **我的加载项**）
+3. 在弹出的窗口中，选择顶部的 **"共享文件夹"** 标签页
+4. 列表里会出现 **"GitDoc - 文档版本管理"**，点击它，然后点 **"添加"**
+
+Word 右侧会弹出 GitDoc 任务窗格，说明安装成功！
+
+---
 
 ### 5. 开始使用
 
-1. 打开任意 `.docx` 文件
-2. 在 Word 右侧任务窗格中可见 GitDoc 面板
-3. 编辑并保存文档，版本历史自动更新
-4. 点击版本旁的"对比"查看差异，点击"回滚"恢复历史版本
+1. 用 Word 打开任意 `.docx` 文档
+2. Word 右侧任务窗格会显示 GitDoc 面板（如果没显示，点击 **开发工具** → **加载项** 重新打开）
+3. 像平常一样编辑文档，每次保存（`Ctrl+S`）时，GitDoc 会自动记录一个新版本
+4. 在面板中可以查看历史版本、对比任意两个版本的差异、一键回滚到旧版本
 
 ## 项目结构
 
