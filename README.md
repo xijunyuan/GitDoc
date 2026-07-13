@@ -119,12 +119,36 @@ Word 右侧会弹出 GitDoc 任务窗格，说明安装成功！
 3. 像平常一样编辑文档，每次保存（`Ctrl+S`）时，GitDoc 会自动记录一个新版本
 4. 在面板中可以查看历史版本、对比任意两个版本的差异、一键回滚到旧版本
 
+## MCP 服务器（AI 助手集成）
+
+GitDoc v0.2.0 起内置 MCP（模型上下文协议）服务器，让 AI 编程助手可以直接读取、对比和分析 Word 文档。
+
+### 快速开始
+
+双击运行 **`scripts\install_mcp.bat`** 一键安装，然后：
+
+```bash
+# Claude Code
+claude mcp add gitdoc -- python backend/mcp_server.py
+
+# 或启动 HTTP 模式
+python backend/mcp_server.py --transport http
+```
+
+安装后，AI 可以帮你：
+- 读 `.docx` 需求文档，根据内容写代码
+- 对比合同的修改版本，生成变更摘要
+- 自动追踪文档变更历史
+
+详细文档见 **[docs/mcp.md](docs/mcp.md)**。
+
 ## 项目结构
 
 ```
 GitDoc/
 ├── backend/                    # Python 后端 (FastAPI)
-│   ├── main.py                 # 服务入口
+│   ├── main.py                 # REST API 服务入口
+│   ├── mcp_server.py           # MCP 服务器（AI 助手接口）
 │   ├── config.py               # 配置管理
 │   ├── models.py               # Pydantic 数据模型
 │   ├── git_operations.py       # Git 操作封装
@@ -143,9 +167,12 @@ GitDoc/
 │       ├── panels/             # 面板组件 (history/diff/preview/rollback)
 │       ├── styles/             # CSS 样式
 │       └── assets/             # 图标资源
+├── docs/
+│   └── mcp.md                  # MCP 服务器详细文档
 └── scripts/                    # 安装/构建/启动脚本
     ├── start_backend.bat       # 启动后端
     ├── install_addin.bat       # 安装 Word 加载项
+    ├── install_mcp.bat         # 安装 MCP 服务器依赖
     ├── build_exe.bat           # 打包为独立 exe
     ├── gen_cert.bat            # 生成 SSL 证书
     ├── sideload.bat            # 侧载加载项

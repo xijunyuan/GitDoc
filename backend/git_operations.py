@@ -49,6 +49,7 @@ class GitRepo:
         return subprocess.run(
             cmd,
             capture_output=capture_output,
+            stdin=subprocess.DEVNULL,
             text=True,
             encoding="utf-8",
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
@@ -68,6 +69,7 @@ class GitRepo:
         proc = subprocess.run(
             cmd,
             capture_output=True,
+            stdin=subprocess.DEVNULL,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
         )
         if proc.returncode != 0:

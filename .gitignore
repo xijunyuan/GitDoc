@@ -17,6 +17,7 @@ dist/
 # OS
 Thumbs.db
 .DS_Store
+~$*
 
 # GitDoc runtime data (per-document repos)
 .gitdoc/
