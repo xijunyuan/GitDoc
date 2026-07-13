@@ -33,3 +33,5 @@ venv/
 
 # Claude
 .claude/
+agent.md
+agent.ipynb
