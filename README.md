@@ -30,7 +30,7 @@
 - Windows 10/11
 - Microsoft Word 2016 或更高版本
 - Python 3.10+（或使用打包后的 exe）
-- Git for Windows
+- [Git for Windows](https://git-scm.com/download/win)
 
 ## 快速开始
 
@@ -63,6 +63,11 @@ pip install -r requirements.txt
 - 看到 `[OK] Certificate is now trusted.` 即完成
 
 > **如果不想给管理员权限**，脚本会提示手动信任的方法：双击 `scripts\certs\localhost.crt`，按向导安装到"受信任的根证书颁发机构"。
+>
+> 也可以手动执行以下命令信任证书：
+> ```powershell
+> certutil -addstore -user "Root" "scripts\certs\localhost.crt"
+> ```
 
 ---
 
@@ -118,6 +123,25 @@ Word 右侧会弹出 GitDoc 任务窗格，说明安装成功！
 2. 右侧任务窗格会显示 GitDoc 面板（如果没显示，点击 **插入** → **我的加载项** 重新打开）
 3. 像平常一样编辑文档，每次保存（`Ctrl+S`）时，GitDoc 会自动记录一个新版本
 4. 在面板中可以查看历史版本、对比任意两个版本的差异、一键回滚到旧版本
+
+### 浏览器端使用（推荐）
+
+后端启动后，也可以直接在浏览器中访问 GitDoc Web 界面：
+
+1. 浏览器访问 **https://localhost:18521/**
+2. 首次访问会提示"连接不是私密连接"，点击 **「高级」→「继续前往」**
+3. 在输入框中填入 `.docx` 文件的完整路径，如 `C:\Users\用户名\Desktop\报告.docx`，即可使用全部功能（版本历史、差异对比、回滚）
+
+> 此方式不依赖 Word 加载项，Office 365 家庭版用户也可使用。
+
+## 文档格式说明
+
+| 格式 | 版本控制 | 文本对比 | 回滚 |
+|---|---|---|---|
+| `.docx`（Word 2007+） | ✅ | ✅ | ✅ |
+| `.doc`（Word 97-2003） | ✅ | ❌ | ✅ |
+
+> **强烈建议使用 `.docx` 格式。** 如果是 `.doc` 文件，请在 Word 中「另存为」`.docx`。
 
 ## MCP 服务器（AI 助手集成）
 
