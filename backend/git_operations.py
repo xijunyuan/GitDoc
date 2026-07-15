@@ -196,9 +196,10 @@ class GitRepo:
     def restore_file(self, commit_hash: str, file_path: str) -> bool:
         """
         Restore a file from a specific commit to the working tree.
-        This overwrites the current file on disk.
+        This overwrites the current file on disk. Uses -f to force
+        overwrite even when the working tree has uncommitted changes.
         """
-        result = self._run_git("checkout", commit_hash, "--", file_path)
+        result = self._run_git("checkout", "-f", commit_hash, "--", file_path)
         return result.returncode == 0
 
     def get_commit_count(self) -> int:

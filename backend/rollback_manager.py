@@ -60,7 +60,8 @@ class RollbackManager:
         2. Find the target commit in history (partial hash matching supported)
         3. Create a safety backup of the current file
         4. Restore the .docx from the target commit
-        5. Return success with backup path information
+        5. Commit the restored file as a marker (so history is clear)
+        6. Return success with backup path information
 
         Args:
             commit_hash: Full or partial commit hash to rollback to.
@@ -88,7 +89,7 @@ class RollbackManager:
         # Create safety backup before overwriting
         backup_path = self.backup_current()
 
-        # Restore the .docx from the target commit
+        # Restore the .docx from the target commit (-f forces overwrite)
         success = self.repo.restore_file(target.hash, self.docx_path.name)
 
         if not success:
@@ -97,6 +98,13 @@ class RollbackManager:
                 backup_path=str(backup_path),
                 message="从 Git 恢复文档失败，当前文件已备份 (Failed to restore from Git, current file backed up)"
             )
+
+        # Marker commit so the rollback is visible in history
+        rollback_msg = (
+            f"文档已回滚至版本 {target.short_hash}\n"
+            f"Rolled back to {target.short_hash}"
+        )
+        self.repo.commit(rollback_msg, author="GitDoc Rollback")
 
         return RollbackResponse(
             success=True,

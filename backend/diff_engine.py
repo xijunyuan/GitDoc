@@ -12,6 +12,7 @@ library's well-tested character-level diffing and cleanup logic.
 """
 
 import re
+from difflib import SequenceMatcher
 from typing import List, Tuple
 
 from diff_match_patch import diff_match_patch
@@ -113,59 +114,97 @@ class DiffEngine:
 
     # ---- Block-level diff ----
 
+    # Similarity threshold for treating a "replace" as a word-level diff
+    # (rather than showing the whole block as deleted + inserted).
+    _SIMILARITY_THRESHOLD = 0.4
+
+    def _make_segments(self, raw_diffs: List[Tuple[int, str]]) -> List[DiffSegment]:
+        """Convert (op, text) tuples into DiffSegment objects."""
+        op_map = {0: "equal", -1: "delete", 1: "insert"}
+        return [DiffSegment(operation=op_map[op], text=text) for op, text in raw_diffs]
+
     def diff_blocks(self, blocks1: List[Block],
                     blocks2: List[Block]) -> List[BlockDiff]:
         """
-        Align blocks by index and compute word-level diffs for each pair.
-        Handles insertions/deletions of entire blocks.
+        Align blocks by content similarity (LCS via SequenceMatcher), then
+        compute word-level diffs for each matched pair.
 
-        Args:
-            blocks1: Blocks from the old version.
-            blocks2: Blocks from the new version.
-
-        Returns:
-            List of BlockDiff objects (only blocks with changes are included).
+        This avoids the "wrong pairing" problem of naive index-based alignment
+        when paragraphs are inserted or deleted in the middle of a document.
         """
-        block_diffs = []
-        max_len = max(len(blocks1), len(blocks2))
+        block_diffs: List[BlockDiff] = []
 
-        for i in range(max_len):
-            if i >= len(blocks1):
-                # Entire block was inserted in version 2
-                b2 = blocks2[i]
-                segments = [DiffSegment(operation="insert", text=b2.text)]
-                block_diffs.append(BlockDiff(
-                    block_index=i,
-                    block_type=b2.type,
-                    segments=segments
-                ))
-            elif i >= len(blocks2):
-                # Entire block was deleted from version 2
-                b1 = blocks1[i]
-                segments = [DiffSegment(operation="delete", text=b1.text)]
-                block_diffs.append(BlockDiff(
-                    block_index=i,
-                    block_type=b1.type,
-                    segments=segments
-                ))
-            else:
-                # Both exist — compute word-level diff
-                b1, b2 = blocks1[i], blocks2[i]
-                raw_diffs = self.word_level_diff(b1.text, b2.text)
-                segments = []
-                for op, text in raw_diffs:
-                    op_map = {0: "equal", -1: "delete", 1: "insert"}
-                    segments.append(DiffSegment(
-                        operation=op_map[op],
-                        text=text
-                    ))
-                # Only include if there are actual changes
-                has_changes = any(s.operation != "equal" for s in segments)
-                if has_changes:
+        # Treat block texts as sequence elements for alignment
+        texts1 = [b.text for b in blocks1]
+        texts2 = [b.text for b in blocks2]
+        sm = SequenceMatcher(None, texts1, texts2)
+
+        for tag, i1, i2, j1, j2 in sm.get_opcodes():
+            if tag == "equal":
+                # Blocks match — check for word-level changes
+                for old_i, new_j in zip(range(i1, i2), range(j1, j2)):
+                    b1, b2 = blocks1[old_i], blocks2[new_j]
+                    raw = self.word_level_diff(b1.text, b2.text)
+                    segments = self._make_segments(raw)
+                    if any(s.operation != "equal" for s in segments):
+                        block_diffs.append(BlockDiff(
+                            block_index=old_i,
+                            block_type=b1.type if b1.type == b2.type else f"{b1.type}→{b2.type}",
+                            segments=segments,
+                        ))
+
+            elif tag == "replace":
+                # Two dissimilar spans — align element by element when lengths
+                # match; show remaining elements as delete / insert.
+                common = min(i2 - i1, j2 - j1)
+                for k in range(common):
+                    b1, b2 = blocks1[i1 + k], blocks2[j1 + k]
+                    if SequenceMatcher(None, b1.text, b2.text).ratio() >= self._SIMILARITY_THRESHOLD:
+                        raw = self.word_level_diff(b1.text, b2.text)
+                        segments = self._make_segments(raw)
+                        block_diffs.append(BlockDiff(
+                            block_index=i1 + k,
+                            block_type=b1.type if b1.type == b2.type else f"{b1.type}→{b2.type}",
+                            segments=segments,
+                        ))
+                    else:
+                        block_diffs.append(BlockDiff(
+                            block_index=i1 + k, block_type=b1.type,
+                            segments=[DiffSegment(operation="delete", text=b1.text)],
+                        ))
+                        block_diffs.append(BlockDiff(
+                            block_index=j1 + k, block_type=b2.type,
+                            segments=[DiffSegment(operation="insert", text=b2.text)],
+                        ))
+                # Surplus in old version
+                for k in range(common, i2 - i1):
+                    b = blocks1[i1 + k]
                     block_diffs.append(BlockDiff(
-                        block_index=i,
-                        block_type=b1.type if b1.type == b2.type else f"{b1.type}→{b2.type}",
-                        segments=segments
+                        block_index=i1 + k, block_type=b.type,
+                        segments=[DiffSegment(operation="delete", text=b.text)],
+                    ))
+                # Surplus in new version
+                for k in range(common, j2 - j1):
+                    b = blocks2[j1 + k]
+                    block_diffs.append(BlockDiff(
+                        block_index=j1 + k, block_type=b.type,
+                        segments=[DiffSegment(operation="insert", text=b.text)],
+                    ))
+
+            elif tag == "delete":
+                for k in range(i1, i2):
+                    b = blocks1[k]
+                    block_diffs.append(BlockDiff(
+                        block_index=k, block_type=b.type,
+                        segments=[DiffSegment(operation="delete", text=b.text)],
+                    ))
+
+            elif tag == "insert":
+                for k in range(j1, j2):
+                    b = blocks2[k]
+                    block_diffs.append(BlockDiff(
+                        block_index=k, block_type=b.type,
+                        segments=[DiffSegment(operation="insert", text=b.text)],
                     ))
 
         return block_diffs
