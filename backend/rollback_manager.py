@@ -51,23 +51,13 @@ class RollbackManager:
 
     # ---- Rollback ----
 
-    def rollback(self, commit_hash: str) -> RollbackResponse:
+    def rollback(self, commit_hash: str, save_as_new: bool = False) -> RollbackResponse:
         """
         Rollback the document to a specific commit.
 
-        Steps:
-        1. Verify the repository is initialized
-        2. Find the target commit in history (partial hash matching supported)
-        3. Create a safety backup of the current file
-        4. Restore the .docx from the target commit
-        5. Commit the restored file as a marker (so history is clear)
-        6. Return success with backup path information
-
-        Args:
-            commit_hash: Full or partial commit hash to rollback to.
-
-        Returns:
-            RollbackResponse with success status, backup path, and message.
+        When the file is locked by Word:
+        - If save_as_new=False: return locked_by_word=True, let the frontend ask
+        - If save_as_new=True: save restored content as a new file alongside
         """
         if not self.repo.is_initialized():
             return RollbackResponse(
@@ -85,21 +75,36 @@ class RollbackManager:
             )
 
         target = matching[0]
+        total = len(history)
+        for i, c in enumerate(history):
+            if c.hash == target.hash:
+                target.version_tag = f"v{total - i}"
+                break
 
-        # Create safety backup before overwriting
         backup_path = self.backup_current()
 
-        # Restore the .docx from the target commit (-f forces overwrite)
+        # Try to restore the .docx from the target commit
         success = self.repo.restore_file(target.hash, self.docx_path.name)
 
         if not success:
-            return RollbackResponse(
-                success=False,
-                backup_path=str(backup_path),
-                message="从 Git 恢复文档失败，当前文件已备份 (Failed to restore from Git, current file backed up)"
-            )
+            if save_as_new:
+                return self._save_as_new(target, backup_path)
+            else:
+                # File is locked by Word — ask the frontend what to do
+                vtag = target.version_tag or target.short_hash
+                return RollbackResponse(
+                    success=True,
+                    locked_by_word=True,
+                    backup_path=str(backup_path),
+                    message=(
+                        f"当前文档正被 Word 打开，无法直接覆盖。\n\n"
+                        f"请选择:\n"
+                        f"  • 关闭文档 → 关闭 Word 中的文件后重试覆盖\n"
+                        f"  • 另存为新文件 → 将回滚内容保存为 原名_{vtag}.docx"
+                    )
+                )
 
-        # Marker commit so the rollback is visible in history
+        # Direct overwrite succeeded
         rollback_msg = (
             f"文档已回滚至版本 {target.short_hash}\n"
             f"Rolled back to {target.short_hash}"
@@ -112,8 +117,40 @@ class RollbackManager:
             message=(
                 f"文档已回滚至版本 {target.short_hash} ({target.version_tag})\n"
                 f"当前文件已备份至: {backup_path.name}\n"
-                f"请在 Word 中重新打开文档以查看变更。\n\n"
-                f"Document rolled back to {target.short_hash}. "
-                f"Backup saved. Please reopen in Word."
+                f"请在 Word 中重新打开文档以查看变更。"
+            )
+        )
+
+    def _save_as_new(self, target, backup_path: Path) -> RollbackResponse:
+        """Save the restored content as a new file alongside the original."""
+        content = self.repo.get_file_content_at_commit(
+            target.hash, self.docx_path.name
+        )
+        if content is None:
+            return RollbackResponse(
+                success=False,
+                backup_path=str(backup_path),
+                message="从 Git 读取历史版本失败"
+            )
+
+        stem = self.docx_path.stem
+        suffix = self.docx_path.suffix
+        vtag = target.version_tag or target.short_hash
+        restored_path = self.docx_path.parent / f"{stem}_{vtag}{suffix}"
+        restored_path.write_bytes(content)
+
+        self.repo.add(restored_path.name)
+        marker_msg = f"[rollback] 回滚至 {vtag} → 另存为 {restored_path.name}"
+        self.repo.commit(marker_msg, author="GitDoc Rollback")
+
+        return RollbackResponse(
+            success=True,
+            backup_path=str(backup_path),
+            restored_path=str(restored_path),
+            message=(
+                f"回滚文件已保存为:\n"
+                f"{restored_path}\n\n"
+                f"请在 Word 中关闭当前文档后打开此文件。\n"
+                f"当前版本已备份至: {backup_path.name}"
             )
         )

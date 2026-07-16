@@ -30,6 +30,7 @@ class RollbackRequest(BaseModel):
     """Request to rollback a document to a specific commit."""
     commit_hash: str
     docx_path: str
+    save_as_new: bool = False  # True = save as new file, even if not locked
 
 
 # ===================== Response Models =====================
@@ -114,9 +115,26 @@ class RollbackResponse(BaseModel):
     success: bool
     backup_path: Optional[str] = None
     message: str
+    locked_by_word: bool = False       # True = Word has the file locked
+    restored_path: Optional[str] = None  # Path to new file when saved-as-new
 
 
 class ShutdownResponse(BaseModel):
     """Response after shutting down the backend."""
     success: bool
     message: str = "Backend shutting down"
+
+
+# ===================== Notes Models =====================
+
+
+class NoteSaveRequest(BaseModel):
+    """Request to save a note for a specific commit."""
+    docx_path: str
+    commit_hash: str
+    note: str
+
+
+class NotesResponse(BaseModel):
+    """Response containing all notes for a document."""
+    notes: dict = {}  # {commit_hash: note_text}

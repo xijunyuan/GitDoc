@@ -11,6 +11,7 @@ Run:
     python main.py --http   (for plain HTTP, no SSL)
 """
 
+import json
 import os
 import sys
 import tempfile
@@ -33,7 +34,8 @@ from models import (
     HistoryResponse, CommitInfo,
     DiffResponse, DiffSegment, BlockDiff, DiffStats,
     PreviewResponse,
-    StatusResponse, ShutdownResponse
+    StatusResponse, ShutdownResponse,
+    NoteSaveRequest, NotesResponse
 )
 from git_operations import GitRepo
 from commit_manager import CommitManager
@@ -266,8 +268,70 @@ async def get_diff(
 async def rollback(req: RollbackRequest):
     if not Path(req.docx_path).exists():
         raise HTTPException(status_code=404, detail="Document not found")
-    rm = RollbackManager(req.docx_path)
-    return rm.rollback(req.commit_hash)
+
+    # Pause file watcher to prevent git lock conflicts with auto-commit
+    doc_info = active_docs.get(req.docx_path)
+    watcher = doc_info.get("watcher") if doc_info else None
+    if watcher and watcher.is_running:
+        watcher.stop()
+        print(f"[GitDoc] Watcher paused for rollback: {req.docx_path}")
+
+    try:
+        rm = RollbackManager(req.docx_path)
+        return rm.rollback(req.commit_hash, save_as_new=req.save_as_new)
+    finally:
+        # Always resume the watcher, even if rollback fails
+        if watcher and not watcher.is_running:
+            watcher.start()
+            print(f"[GitDoc] Watcher resumed after rollback: {req.docx_path}")
+
+
+# ===================== Notes (per-version annotations) =====================
+
+
+def _get_notes_path(docx_path: str) -> Path:
+    """Return the path to the notes.json file for a document."""
+    return Settings.get_gitdoc_dir(docx_path) / "notes.json"
+
+
+def _load_notes(docx_path: str) -> dict:
+    """Load notes dict from disk, or return empty dict if none exist."""
+    path = _get_notes_path(docx_path)
+    if path.exists():
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return {}
+    return {}
+
+
+def _save_notes(docx_path: str, notes: dict) -> None:
+    """Write notes dict to disk atomically."""
+    path = _get_notes_path(docx_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(notes, f, ensure_ascii=False, indent=2)
+    tmp.replace(path)
+
+
+@app.get("/api/notes", response_model=NotesResponse)
+async def get_notes(docx_path: str = Query(..., description="Document path")):
+    """Get all user notes for a document, keyed by commit hash."""
+    return NotesResponse(notes=_load_notes(docx_path))
+
+
+@app.post("/api/notes")
+async def save_note(req: NoteSaveRequest):
+    """Save or update a note for a specific commit."""
+    notes = _load_notes(req.docx_path)
+    if req.note.strip():
+        notes[req.commit_hash] = req.note.strip()
+    else:
+        notes.pop(req.commit_hash, None)  # Delete note if empty
+    _save_notes(req.docx_path, notes)
+    return {"success": True, "commit_hash": req.commit_hash}
 
 
 @app.get("/api/preview", response_model=PreviewResponse)

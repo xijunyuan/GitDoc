@@ -15,6 +15,7 @@ import re
 from difflib import SequenceMatcher
 from typing import List, Tuple
 
+import jieba
 from diff_match_patch import diff_match_patch
 
 from models import DiffSegment, BlockDiff, DiffStats
@@ -41,12 +42,26 @@ class DiffEngine:
 
     def tokenize(self, text: str) -> List[str]:
         """
-        Split text into word tokens, preserving whitespace.
-        E.g. "Hello world!" → ["Hello", " ", "world", "!"]
+        Split text into word tokens using jieba for Chinese and
+        whitespace-based splitting for other scripts.
+        Preserves whitespace as separate tokens.
+        E.g. "今天天气很好" → ["今天", "天气", "很", "好"]
+             "Hello world!" → ["Hello", " ", "world", "!"]
         """
         if not text:
             return []
-        return self._word_pattern.findall(text)
+        tokens = []
+        for segment in self._word_pattern.findall(text):
+            if segment.isspace():
+                tokens.append(segment)
+            else:
+                # Use jieba for segments containing Chinese characters
+                if re.search(r'[一-鿿]', segment):
+                    cut = jieba.lcut(segment)
+                    tokens.extend(cut)
+                else:
+                    tokens.append(segment)
+        return tokens
 
     def _encode_words(self, words: List[str],
                       word_map: dict, word_list: list) -> str:
@@ -110,7 +125,56 @@ class DiffEngine:
             if decoded_words:
                 result.append((op, ''.join(decoded_words)))
 
+        # Merge consecutive delete-insert pairs for natural reading
+        result = self._merge_consecutive_changes(result)
+
         return result
+
+    def _merge_consecutive_changes(
+        self, diffs: List[Tuple[int, str]]
+    ) -> List[Tuple[int, str]]:
+        """
+        Merge consecutive delete-insert pairs so that all contiguous
+        old content is shown as one deleted block followed by all
+        contiguous new content as one inserted block.
+
+        Example:
+          [(-1,"今"),(1,"明"),(-1,"天"),(1,"日"),(0,"天气")]
+          → [(-1,"今天"),(1,"明日"),(0,"天气")]
+        """
+        if len(diffs) < 3:
+            return diffs
+
+        merged: List[Tuple[int, str]] = []
+        i = 0
+        while i < len(diffs):
+            op, text = diffs[i]
+
+            if op == 0:  # equal — pass through unchanged
+                merged.append((op, text))
+                i += 1
+                continue
+
+            # Collect consecutive alternating non-equal tokens
+            del_parts: List[str] = []
+            ins_parts: List[str] = []
+            j = i
+
+            while j < len(diffs) and diffs[j][0] != 0:
+                cur_op, cur_text = diffs[j]
+                if cur_op == -1:
+                    del_parts.append(cur_text)
+                elif cur_op == 1:
+                    ins_parts.append(cur_text)
+                j += 1
+
+            if del_parts:
+                merged.append((-1, "".join(del_parts)))
+            if ins_parts:
+                merged.append((1, "".join(ins_parts)))
+            i = j
+
+        return merged
 
     # ---- Block-level diff ----
 
