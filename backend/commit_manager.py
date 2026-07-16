@@ -97,10 +97,17 @@ class CommitManager:
             )
 
         # Extract text and cache it for fast diff/preview later
-        cache_dir = Settings.get_cache_dir(str(self.docx_path))
-        DocxParser.extract_and_cache(
-            str(self.docx_path), commit_hash, cache_dir
-        )
+        # Skip text extraction for non-docx files (e.g., old .doc format)
+        if str(self.docx_path).lower().endswith('.docx'):
+            try:
+                cache_dir = Settings.get_cache_dir(str(self.docx_path))
+                DocxParser.extract_and_cache(
+                    str(self.docx_path), commit_hash, cache_dir
+                )
+            except Exception as e:
+                print(f"[GitDoc] Text extraction skipped: {e}")
+        else:
+            print(f"[GitDoc] Text extraction skipped (not .docx): {self.docx_path.name}")
 
         return CommitResponse(
             success=True,

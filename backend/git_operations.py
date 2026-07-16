@@ -8,6 +8,7 @@ The Git repository lives in .gitdoc/.git alongside the tracked .docx file.
 """
 
 import os
+import shutil
 import subprocess
 from pathlib import Path
 from typing import List, Optional
@@ -26,6 +27,8 @@ class GitRepo:
     in a single .gitdoc folder without cluttering the user's directory.
     """
 
+    _GIT_TIMEOUT: int = 30  # seconds — prevents indefinite hangs on lock contention
+
     def __init__(self, docx_path: str):
         self.docx_path = Path(docx_path).resolve()
         self.doc_dir = self.docx_path.parent
@@ -35,25 +38,33 @@ class GitRepo:
 
     # ---- Internal: run git commands ----
 
-    def _run_git(self, *args: str, capture_output: bool = True) -> subprocess.CompletedProcess:
+    def _run_git(self, *args: str, capture_output: bool = True,
+                 timeout: Optional[int] = None) -> subprocess.CompletedProcess:
         """
         Run a git command with --git-dir and --work-tree pre-set.
         Returns the CompletedProcess for the caller to inspect.
         """
+        if timeout is None:
+            timeout = self._GIT_TIMEOUT
         cmd = [
             "git",
             "--git-dir", str(self.git_dir),
             "--work-tree", str(self.doc_dir),
             *args
         ]
-        return subprocess.run(
-            cmd,
-            capture_output=capture_output,
-            stdin=subprocess.DEVNULL,
-            text=True,
-            encoding="utf-8",
-            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-        )
+        try:
+            return subprocess.run(
+                cmd,
+                capture_output=capture_output,
+                stdin=subprocess.DEVNULL,
+                text=True,
+                encoding="utf-8",
+                timeout=timeout,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+            )
+        except subprocess.TimeoutExpired:
+            print(f"[GitDoc] Git command timed out after {timeout}s: {' '.join(cmd)}")
+            raise RuntimeError(f"Git 操作超时（{timeout}秒），请稍后重试") from None
 
     def _run_git_bytes(self, *args: str) -> Optional[bytes]:
         """
@@ -70,6 +81,7 @@ class GitRepo:
             cmd,
             capture_output=True,
             stdin=subprocess.DEVNULL,
+            timeout=self._GIT_TIMEOUT,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
         )
         if proc.returncode != 0:
@@ -115,7 +127,8 @@ class GitRepo:
         result = self._run_git("add", file_path)
         return result.returncode == 0
 
-    def commit(self, message: str, author: str = "GitDoc User") -> Optional[str]:
+    def commit(self, message: str, author: str = "GitDoc User",
+               allow_empty: bool = False) -> Optional[str]:
         """
         Stage and commit the tracked .docx file.
         Returns the commit hash on success, or None if nothing changed / error.
@@ -128,16 +141,20 @@ class GitRepo:
         env["GIT_AUTHOR_NAME"] = author
         env["GIT_COMMITTER_NAME"] = author
 
-        result = subprocess.run(
-            [
-                "git",
-                "--git-dir", str(self.git_dir),
-                "--work-tree", str(self.doc_dir),
-                "commit", "-m", message
-            ],
+        cmd = [
+            "git",
+            "--git-dir", str(self.git_dir),
+            "--work-tree", str(self.doc_dir),
+            "commit", "-m", message
+        ]
+        if allow_empty:
+            cmd.append("--allow-empty")
+
+        result = subprocess.run(cmd,
             capture_output=True,
             text=True,
             encoding="utf-8",
+            timeout=self._GIT_TIMEOUT,
             env=env,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
         )
@@ -156,11 +173,13 @@ class GitRepo:
     def get_history(self, max_count: int = 100) -> List[CommitInfo]:
         """
         Retrieve the commit history, newest first.
-        Returns an empty list if no commits exist.
+        Filters by the tracked .docx file so that different documents
+        in the same directory don't share history.
         """
         result = self._run_git(
             "log", f"--max-count={max_count}",
-            "--format=%H|%h|%an|%at|%s"
+            "--format=%H|%h|%an|%at|%s",
+            "--", self.docx_filename
         )
         if result.returncode != 0:
             return []
@@ -196,15 +215,30 @@ class GitRepo:
     def restore_file(self, commit_hash: str, file_path: str) -> bool:
         """
         Restore a file from a specific commit to the working tree.
-        This overwrites the current file on disk. Uses -f to force
-        overwrite even when the working tree has uncommitted changes.
+
+        Uses git show + Python file I/O instead of git checkout to avoid
+        "unable to unlink" errors when Word has the file open on Windows.
         """
-        result = self._run_git("checkout", "-f", commit_hash, "--", file_path)
-        return result.returncode == 0
+        content = self.get_file_content_at_commit(commit_hash, file_path)
+        if content is None:
+            return False
+
+        target = (self.doc_dir / file_path).resolve()
+        tmp = target.with_suffix(target.suffix + ".gitdoc_tmp")
+        try:
+            tmp.write_bytes(content)
+            shutil.copy2(str(tmp), str(target))
+            return True
+        except OSError as e:
+            print(f"[GitDoc] Failed to restore {file_path}: {e}")
+            return False
+        finally:
+            if tmp.exists():
+                tmp.unlink()
 
     def get_commit_count(self) -> int:
-        """Return the total number of commits in the repository."""
-        result = self._run_git("rev-list", "--count", "HEAD")
+        """Return the number of commits for the tracked .docx file."""
+        result = self._run_git("rev-list", "--count", "HEAD", "--", self.docx_filename)
         if result.returncode != 0:
             return 0
         try:

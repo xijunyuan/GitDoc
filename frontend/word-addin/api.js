@@ -128,12 +128,13 @@ var GitDoc = GitDoc || {};
          * @param {string} commitHash — Target commit hash.
          * @param {string} docxPath — Full path to the .docx file.
          */
-        rollback: function(commitHash, docxPath) {
+        rollback: function(commitHash, docxPath, saveAsNew) {
             return this._fetch("/api/rollback", {
                 method: "POST",
                 body: {
                     commit_hash: commitHash,
-                    docx_path: docxPath
+                    docx_path: docxPath,
+                    save_as_new: saveAsNew || false
                 }
             });
         },
@@ -156,6 +157,29 @@ var GitDoc = GitDoc || {};
          */
         shutdown: function() {
             return this._fetch("/api/shutdown", { method: "POST" });
+        },
+
+        /**
+         * Get all notes for a document.
+         * GET /api/notes?docx_path=...
+         */
+        getNotes: function(docxPath) {
+            return this._fetch("/api/notes?docx_path=" + encodeURIComponent(docxPath));
+        },
+
+        /**
+         * Save a note for a specific commit.
+         * POST /api/notes
+         */
+        saveNote: function(docxPath, commitHash, note) {
+            return this._fetch("/api/notes", {
+                method: "POST",
+                body: {
+                    docx_path: docxPath,
+                    commit_hash: commitHash,
+                    note: note
+                }
+            });
         }
     };
 

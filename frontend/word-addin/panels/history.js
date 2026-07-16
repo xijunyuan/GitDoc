@@ -17,6 +17,7 @@ var GitDoc = GitDoc || {};
         this.container = container;
         this.app = app;
         this.commits = [];
+        this.notes = {};       // {commit_hash: note_text}
         this.selectedForDiff = null; // hash selected as the "from" side for diff
     }
 
@@ -27,17 +28,20 @@ var GitDoc = GitDoc || {};
             this.container.style.display = "block";
             this.container.innerHTML = '<div class="loading">' + ns.I18N.t("info.loading") + '</div>';
 
-            // Fetch history from backend
-            this.app.api.getHistory(this.app.currentDocxPath)
-                .then(function(data) {
-                    self.commits = data.commits || [];
-                    self._render();
-                })
-                .catch(function(err) {
-                    self.container.innerHTML =
-                        '<div class="error-box">' + ns.I18N.t("error.no_backend") + '<br>' +
-                        '<small>' + err.message + '</small></div>';
-                });
+            // Fetch history and notes in parallel
+            var path = this.app.currentDocxPath;
+            Promise.all([
+                this.app.api.getHistory(path),
+                this.app.api.getNotes(path).catch(function() { return { notes: {} }; })
+            ]).then(function(results) {
+                self.commits = results[0].commits || [];
+                self.notes = results[1].notes || {};
+                self._render();
+            }).catch(function(err) {
+                self.container.innerHTML =
+                    '<div class="error-box">' + ns.I18N.t("error.no_backend") + '<br>' +
+                    '<small>' + err.message + '</small></div>';
+            });
         },
 
         _render: function() {
@@ -85,6 +89,19 @@ var GitDoc = GitDoc || {};
                 html += '      <span class="commit-time">' + ts + '</span>';
                 html += '    </div>';
                 html += '    <div class="timeline-message">' + self._escapeHtml(c.message) + '</div>';
+                // Note display / edit
+                var note = self.notes[c.hash] || "";
+                html += '    <div class="timeline-note" data-note-hash="' + c.hash + '">';
+                if (note) {
+                    html += '      <div class="note-display">'
+                          + '<span class="note-icon">📝</span> '
+                          + '<span class="note-text">' + self._escapeHtml(note) + '</span>'
+                          + ' <button class="btn-note-edit" data-action="note-edit" data-hash="' + c.hash + '">✏️</button>'
+                          + '</div>';
+                } else {
+                    html += '      <button class="btn-note-add" data-action="note-edit" data-hash="' + c.hash + '">+ 添加备注</button>';
+                }
+                html += '    </div>';
                 html += '    <div class="timeline-actions">';
                 html += '      <button class="btn-sm" data-action="preview" data-hash="' + c.hash + '">' + T.t("btn.preview") + '</button>';
                 html += '      <button class="btn-sm" data-action="diff-select" data-hash="' + c.hash + '">' + T.t("btn.diff") + '</button>';
@@ -140,11 +157,22 @@ var GitDoc = GitDoc || {};
                 });
             }
 
+            // Note edit buttons
+            var noteBtns = this.container.querySelectorAll("[data-action='note-edit']");
+            for (var ni = 0; ni < noteBtns.length; ni++) {
+                noteBtns[ni].addEventListener("click", function(e) {
+                    e.stopPropagation();
+                    var hash = this.getAttribute("data-hash");
+                    self._editNote(hash);
+                });
+            }
+
             // Action buttons inside each timeline item
             var buttons = this.container.querySelectorAll("[data-action]");
             for (var i = 0; i < buttons.length; i++) {
                 buttons[i].addEventListener("click", function(e) {
                     var action = this.getAttribute("data-action");
+                    if (action === "note-edit") return; // handled above
                     var hash = this.getAttribute("data-hash");
                     var tag = this.getAttribute("data-tag");
 
@@ -155,16 +183,13 @@ var GitDoc = GitDoc || {};
 
                         case "diff-select":
                             if (!self.selectedForDiff) {
-                                // First selection: set as base
                                 self.selectedForDiff = hash;
                                 self._render();
                                 self._showDiffBanner(hash);
                             } else if (self.selectedForDiff === hash) {
-                                // Deselect
                                 self.selectedForDiff = null;
                                 self._render();
                             } else {
-                                // Two selected: compute diff
                                 var from = self.selectedForDiff;
                                 self.selectedForDiff = null;
                                 self.app.showDiffView(from, hash);
@@ -177,6 +202,50 @@ var GitDoc = GitDoc || {};
                     }
                 });
             }
+        },
+
+        /**
+         * Replace the note display for a commit with an inline editor.
+         */
+        _editNote: function(hash) {
+            var self = this;
+            var noteDiv = this.container.querySelector("[data-note-hash='" + hash + "']");
+            if (!noteDiv) return;
+
+            var current = this.notes[hash] || "";
+
+            noteDiv.innerHTML =
+                '<textarea class="note-textarea" data-note-input="' + hash + '" '
+                + 'placeholder="在此输入备注（说明修改了什么）..." '
+                + 'style="width:100%;min-height:50px;padding:6px;border:1px solid #4a90d9;border-radius:4px;margin:4px 0;font-size:13px">'
+                + self._escapeHtml(current) + '</textarea>'
+                + '<div style="margin-top:4px">'
+                + '<button class="btn-sm btn-primary" data-action="note-save" data-hash="' + hash + '">保存</button> '
+                + '<button class="btn-sm" data-action="note-cancel" data-hash="' + hash + '">取消</button>'
+                + '</div>';
+
+            // Bind save/cancel
+            var saveBtn = noteDiv.querySelector("[data-action='note-save']");
+            var cancelBtn = noteDiv.querySelector("[data-action='note-cancel']");
+            var textarea = noteDiv.querySelector("textarea");
+
+            saveBtn.addEventListener("click", function() {
+                var note = textarea.value.trim();
+                self.app.api.saveNote(self.app.currentDocxPath, hash, note)
+                    .then(function() {
+                        self.notes[hash] = note;
+                        self._render();
+                    })
+                    .catch(function(err) {
+                        alert("保存备注失败: " + err.message);
+                    });
+            });
+
+            cancelBtn.addEventListener("click", function() {
+                self._render();
+            });
+
+            textarea.focus();
         },
 
         _showDiffBanner: function(hash) {

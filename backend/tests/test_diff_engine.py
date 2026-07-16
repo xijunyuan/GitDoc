@@ -43,10 +43,10 @@ class TestDiffEngine(unittest.TestCase):
         self.assertEqual(tokens, [])
 
     def test_tokenize_chinese(self):
-        """Chinese characters should be individual tokens."""
+        """Chinese text should be segmented into words via jieba."""
         tokens = self.engine.tokenize("你好世界")
-        # Chinese chars have no whitespace, so each char is a non-whitespace run
-        self.assertEqual(tokens, ["你好世界"])
+        # jieba splits this as two words, not four characters
+        self.assertEqual(tokens, ["你好", "世界"])
 
     # --- Word-Level Diff Tests ---
 
