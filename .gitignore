@@ -19,6 +19,10 @@ Thumbs.db
 .DS_Store
 ~$*
 
+# Generated certificates (each user runs gen_cert.bat locally)
+scripts/certs/localhost.crt
+scripts/certs/localhost.key
+
 # GitDoc runtime data (per-document repos)
 .gitdoc/
 

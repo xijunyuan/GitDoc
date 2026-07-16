@@ -15,7 +15,7 @@
     <IconUrl DefaultValue="https://localhost:18521/assets/icon-32.png"/>
     <HighResolutionIconUrl DefaultValue="https://localhost:18521/assets/icon-80.png"/>
 
-    <SupportUrl DefaultValue="https://github.com/gitdoc/gitdoc"/>
+    <SupportUrl DefaultValue="https://github.com/xijunyuan/GitDoc"/>
     <AppDomains>
         <AppDomain>https://localhost:18521</AppDomain>
     </AppDomains>
@@ -99,7 +99,7 @@
 
             <bt:Urls>
                 <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:18521/index.html"/>
-                <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://github.com/gitdoc/gitdoc"/>
+                <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://github.com/xijunyuan/GitDoc"/>
             </bt:Urls>
 
             <bt:ShortStrings>

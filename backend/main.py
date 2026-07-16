@@ -133,7 +133,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="GitDoc Backend",
-    version="0.1.0",
+    version="1.0.0",
     description="文档版本控制 (Document Version Control) — API + Frontend",
     lifespan=lifespan
 )
@@ -400,7 +400,7 @@ if __name__ == "__main__":
     use_ssl = (not args.http) and _ssl_keyfile and _ssl_certfile
 
     protocol = "https" if use_ssl else "http"
-    print(f"GitDoc Backend v0.1.0")
+    print(f"GitDoc Backend v1.0.0")
     print(f"Frontend:  {protocol}://localhost:{Settings.PORT}")
     print(f"API docs:  {protocol}://localhost:{Settings.PORT}/docs")
     print(f"SSL:       {'enabled' if use_ssl else 'disabled (use --http to force HTTP)'}")
