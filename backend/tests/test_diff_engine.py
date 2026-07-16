@@ -141,6 +141,61 @@ class TestDiffEngine(unittest.TestCase):
         self.assertEqual(result[0].block_index, 1)
         self.assertEqual(result[0].segments[0].operation, "delete")
 
+    def test_mid_insert_preserves_alignment(self):
+        """Inserting a paragraph in the middle should NOT shift subsequent blocks.
+
+        This was the original bug: index-based alignment paired the wrong
+        blocks when a new paragraph appeared in the middle.
+        """
+        b1 = [
+            Block("paragraph", "First paragraph", 0),
+            Block("paragraph", "Second paragraph", 1),
+            Block("paragraph", "Third paragraph", 2),
+        ]
+        b2 = [
+            Block("paragraph", "First paragraph", 0),
+            Block("paragraph", "New paragraph in the middle", 1),
+            Block("paragraph", "Second paragraph", 2),
+            Block("paragraph", "Third paragraph", 3),
+        ]
+
+        result = self.engine.diff_blocks(b1, b2)
+
+        # Should only have ONE diff block: the inserted paragraph
+        self.assertEqual(len(result), 1,
+            f"Expected only 1 inserted block, got {len(result)}. "
+            f"B2 and B3 should be correctly aligned and show no changes."
+        )
+        self.assertEqual(result[0].block_index, 1)
+        self.assertTrue(
+            all(s.operation == "insert" for s in result[0].segments),
+            "The new paragraph should be marked as insert"
+        )
+
+    def test_single_word_change_in_paragraph(self):
+        """Changing one word in a paragraph should show that word, not the whole block."""
+        b1 = [
+            Block("paragraph", "First paragraph is here", 0),
+            Block("paragraph", "The quick brown fox", 1),
+        ]
+        b2 = [
+            Block("paragraph", "First paragraph is here", 0),
+            Block("paragraph", "The quick red fox", 1),
+        ]
+
+        result = self.engine.diff_blocks(b1, b2)
+
+        self.assertEqual(len(result), 1, "Only one block should show changes")
+        self.assertEqual(result[0].block_index, 1)
+
+        # The diff should mention the changed word, not the whole paragraph
+        segments = result[0].segments
+        texts = "".join(s.text for s in segments)
+        self.assertIn("red", texts, "Should highlight the new word 'red'")
+        self.assertIn("brown", texts, "Should mark 'brown' as deleted")
+        self.assertNotEqual(texts.strip(), "The quick red fox",
+            "Should NOT show the whole paragraph as a single insert")
+
     # --- Stats Tests ---
 
     def test_compute_stats(self):
